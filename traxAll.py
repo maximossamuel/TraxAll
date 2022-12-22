@@ -41,13 +41,15 @@ class TraxAll(MDApp):
         dialOptions = {
             "Transaction" : [ 
                 "icons/money.png",
-                "on_release", lambda x: self.askForNewTransaction()
+                "on_release", lambda x : self.askForNewTransaction()
             ], 
             "Payment Method" : [
                 "icons/creditCard.png",
+                "on_release", lambda x : self.askForNewItem(self.paymentMethods, self.paymentMethodsFile, "Payment Method")
             ], 
             "Vendor" : [
-                "icons/vendor.png"
+                "icons/vendor.png",
+                "on_release", lambda x : self.askForNewItem(self.vendors, self.vendorsFile, "Vendor/Service")
             ]
         }
 
@@ -146,7 +148,43 @@ class TraxAll(MDApp):
         dialog.open()
         datePicker.open()
 
+    def askForNewItem(self, itemList, filename, itemType):
+        errorDialog = MDDialog(
+            title = "Error",
+            text = "This " + itemType.lower() + " is already in our records. Please try again.",
+            buttons = [
+                MDFillRoundFlatButton(
+                    text = "OK",
+                    on_release = lambda x : errorDialog.dismiss()
+                )
+            ]
+        )
 
+        textField = MDTextField(
+            hint_text = itemType
+        )
+
+        dialog = MDDialog(
+            title = "Add New " + itemType,
+            type = "custom",
+            content_cls = MDBoxLayout(
+                textField,
+                orientation = "vertical",
+                size_hint_y = None
+            ),
+            buttons = [
+                MDFlatButton(
+                    text = "CANCEL",
+                    on_release = lambda x : dialog.dismiss()
+                ),
+                MDFillRoundFlatButton(
+                    text = "ADD",
+                    on_release = lambda x : dialog.dismiss() if self.addToList(textField.text, itemList, filename) else errorDialog.open()   
+                )
+            ],
+        )
+
+        dialog.open()
 
     @staticmethod
     def readFromFile(filename):
@@ -166,7 +204,7 @@ class TraxAll(MDApp):
 
         self.data.sort(key = lambda data: data[0], reverse = True)
 
-    def listFromFile (self, list, filename):
+    def listFromFile (self, itemList, filename):
         try:
             fileReader = self.readFromFile(filename)
         except IOError as err:
@@ -174,15 +212,15 @@ class TraxAll(MDApp):
             return
 
         for rowData in fileReader:
-            list.append(rowData)
+            itemList.append(rowData)
 
-        list.sort()
+        itemList.sort()
 
-    def saveToFile(self, list, filename):
+    def saveToFile(self, itemList, filename):
         csvFilename = open(filename, 'w', newline = '')
         csvWriter = csv.writer(csvFilename)
         
-        for rowData in list:
+        for rowData in itemList:
             csvWriter.writerow(rowData)
 
     def addTransaction(self, newData):
@@ -193,11 +231,17 @@ class TraxAll(MDApp):
 
         return True
 
-    def addToList(self, newData, list, filename):
-        list.append(newData)
-        list.sort()
+    def addToList(self, newData, itemList, filename):
+        itemList.append(newData)
+        itemList.sort()
 
-        self.saveToFile(list, filename)
+        for rowData in itemList:
+            if newData == rowData:
+                return False
+
+        self.saveToFile(itemList, filename)
+        
+        return True
 
 
 TraxAll().run()
