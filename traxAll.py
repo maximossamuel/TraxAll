@@ -7,6 +7,7 @@ from kivymd.uix.floatlayout import MDFloatLayout
 from kivymd.uix.screen import MDScreen
 from kivymd.uix.button import MDFillRoundFlatButton
 from kivymd.uix.button import MDFlatButton
+from kivymd.uix.button import MDFloatingActionButtonSpeedDial
 from kivymd.uix.dialog import MDDialog
 from kivymd.uix.textfield import MDTextField
 from kivymd.uix.pickers import MDDatePicker
@@ -18,16 +19,42 @@ from datetime import date
 
 class TraxAll(MDApp):
     data = []
+    vendors = []
+    paymentMethods = []
+    categories = []
+
+    transactionsFile = "csvFiles/transactions.csv"
+    vendorsFile = "csvFiles/vendors.csv"
+    paymentMethodsFile = "csvFiles/paymentMethods.csv"
+    categoriesFile = "csvFiles/categories.csv"
+
     dataTable = None
     columnToSortBy = 0
     screen = MDScreen()
 
     def build(self):
-        self.listFromFile ("csvFiles/transactions.csv")
+        self.tableFromFile ("csvFiles/transactions.csv")
+        self.listFromFile (self.vendors, self.vendorsFile)
+        self.listFromFile (self.paymentMethods, self.paymentMethodsFile)
+        self.listFromFile (self.categories, self.categoriesFile)
+
+        dialOptions = {
+            "Transaction" : [ 
+                "icons/money.png",
+                "on_release", lambda x: self.askForNewTransaction()
+            ], 
+            "Payment Method" : [
+                "icons/creditCard.png",
+            ], 
+            "Vendor" : [
+                "icons/vendor.png"
+            ]
+        }
+
 
         self.dataTable = MDDataTable (
             pos_hint = {"center_x" : 0.5, "center_y" : 0.5},
-            size_hint = (1.0, 0.85),
+            size_hint = (1.0, 0.8),
             check = False,
             column_data = [("Date", dp(20)), ("Cost", dp(20)), ("Store/Service", dp(30)), ("Category", dp(30)), ("Payment Method", dp(30)), ("Description", dp(30))],
             row_data = self.data,
@@ -47,16 +74,35 @@ class TraxAll(MDApp):
             on_release = lambda x: self.askForNewTransaction()
         )
 
+        addButton = MDFloatingActionButtonSpeedDial(
+            data = dialOptions,
+            root_button_anim = True,
+            pos_hint = {"center_x" : 0.5}
+        )
+
+
         layout = MDFloatLayout()
         
-        addTransactionButtonBox.add_widget(addTransactionButton)
+        #addTransactionButtonBox.add_widget(addButton)
         self.screen.add_widget(self.dataTable)
-        self.screen.add_widget(addTransactionButtonBox)
-        self.addToList((date.fromisoformat("2022-03-11"),"This","os ","a","test","stub"))
+        self.screen.add_widget(addButton)
+        self.addTransaction((date.fromisoformat("2022-03-11"),"This","os ","a","test","stub"))
         return self.screen
 
-    @staticmethod
-    def askForNewTransaction():
+    def askForNewTransaction(self):
+        transaction = []
+
+        errorDialog = MDDialog(
+            title = "Error",
+            text = "Something's not right. Please review the transaction details and try again.",
+            buttons = [
+                MDFillRoundFlatButton(
+                    text = "OK",
+                    on_release = lambda x : errorDialog.dismiss()
+                )
+            ]
+        )
+
         datePicker = MDDatePicker(
             on_cancel = lambda x: print("Daniel")
         )
@@ -69,8 +115,13 @@ class TraxAll(MDApp):
                     hint_text = "Cost",
                     input_filter = "float",
                 ),
-                MDTextField(
-                    hint_text = "Store/Service",
+                MDDropdownMenu(
+                    #text = "Store/Service",
+                    items = self.vendors
+                ),
+                MDDropdownMenu(
+                    #text = "Payment Method",
+                    items = self.paymentMethods
                 ),
                 MDTextField(
                     hint_text = "Description"
@@ -86,7 +137,8 @@ class TraxAll(MDApp):
                     on_release = lambda x : dialog.dismiss()
                 ),
                 MDFillRoundFlatButton(
-                    text = "ADD"
+                    text = "ADD",
+                    on_release = lambda x : dialog.dismiss() if self.addTransaction() else errorDialog.open()   
                 )
             ]
         )
@@ -102,7 +154,7 @@ class TraxAll(MDApp):
         csvFileReader = csv.reader(csvFilename)
         return csvFileReader
 
-    def listFromFile(self, filename):
+    def tableFromFile(self, filename):
         try:
             fileReader = self.readFromFile(filename)
         except IOError as err:
@@ -114,18 +166,38 @@ class TraxAll(MDApp):
 
         self.data.sort(key = lambda data: data[0], reverse = True)
 
-    def saveToFile(self, filename):
+    def listFromFile (self, list, filename):
+        try:
+            fileReader = self.readFromFile(filename)
+        except IOError as err:
+            print(filename)
+            return
+
+        for rowData in fileReader:
+            list.append(rowData)
+
+        list.sort()
+
+    def saveToFile(self, list, filename):
         csvFilename = open(filename, 'w', newline = '')
         csvWriter = csv.writer(csvFilename)
         
-        for rowData in self.dataTable.row_data:
+        for rowData in list:
             csvWriter.writerow(rowData)
 
-    def addToList(self, newData):
+    def addTransaction(self, newData):
         self.dataTable.add_row(newData)
         self.dataTable.row_data.sort(key = lambda data: data[0], reverse = True)
 
-        self.saveToFile("csvFiles/transactions.csv")
+        self.saveToFile(self.data, self.transactionsFile)
+
+        return True
+
+    def addToList(self, newData, list, filename):
+        list.append(newData)
+        list.sort()
+
+        self.saveToFile(list, filename)
 
 
 TraxAll().run()
