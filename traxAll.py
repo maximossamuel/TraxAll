@@ -17,6 +17,7 @@ from kivymd.uix.label import MDLabel
 
 import csv
 from datetime import date
+from datetime import datetime
 
 
 class TraxAll(MDApp):
@@ -31,7 +32,10 @@ class TraxAll(MDApp):
     categoriesFile = "csvFiles/categories.csv"
 
     dataTable = None
+    dateLabel = None
+    
     columnToSortBy = 0
+
     screen = MDScreen()
 
     def build(self):
@@ -66,6 +70,8 @@ class TraxAll(MDApp):
             sorted_on = "Date",
         )
 
+        self.dateLabel = MDLabel()
+
         addTransactionButtonBox = MDBoxLayout(
             pos_hint = {"center_x" : 0.5},
             adaptive_size = True,
@@ -97,9 +103,7 @@ class TraxAll(MDApp):
 
         transaction = []
 
-        dateLabel = MDLabel(
-            text = "Select a date"
-        )
+        # self.dateLabel.text = "Date"
 
         errorDialog = MDDialog(
             title = "Error",
@@ -112,15 +116,14 @@ class TraxAll(MDApp):
             ]
         )
 
-        # datePicker = MDDatePicker(
-        #     on_save = lambda x=value: assign()
-        # )
+        # datePicker = MDDatePicker()
+        # datePicker.on_save = self.on_save and datePicker.dismiss
 
         paymentMethodListItems = [
             {
                 "text" : item[0],
                 "viewclass" : "OneLineListItem",
-                "on_release" : lambda x = item: [paymentMethodDropItem.set_item(x[0]), paymentMethodMenu.dismiss()]
+                "on_release" : lambda x = item : [paymentMethodDropItem.set_item(x[0]), paymentMethodMenu.dismiss()]
             } for item in self.paymentMethods
         ]
 
@@ -128,8 +131,16 @@ class TraxAll(MDApp):
             {
                 "text" : item[0],
                 "viewclass" : "OneLineListItem",
-                "on_release" : lambda x = item: [vendorDropItem.set_item(x[0]), vendorMenu.dismiss()]
+                "on_release" : lambda x = item : [vendorDropItem.set_item(x[0]), vendorMenu.dismiss()]
             } for item in self.vendors
+        ]
+
+        categoryListItems = [
+            {
+                "text" : item [0],
+                "viewclass" : "OneLineListItem",
+                "on_release" : lambda x = item : [categoryDropItem.set_item(x[0]), categoryMenu.dismiss()] 
+            } for item in self.categories
         ]
 
         vendorDropItem = MDDropDownItem()
@@ -157,11 +168,13 @@ class TraxAll(MDApp):
             width_mult = 4
         )
 
-        vendorDropItem.text = "Vendor"
-        paymentMethodDropItem.text = "Payment Method"
+        vendorDropItem.text = "Select"
+        paymentMethodDropItem.text = "Select"
+        categoryDropItem.text = "Select"
 
         vendorDropItem.on_release = vendorMenu.open
         paymentMethodDropItem.on_release = paymentMethodMenu.open
+        categoryDropItem.on_release = categoryMenu.open
 
         dialog = MDDialog(
             title = "Add Transaction",
@@ -170,15 +183,37 @@ class TraxAll(MDApp):
                 MDTextField(
                     hint_text = "Date",
                     validator = "date",
-                    date_format = "yyyy/mm/dd"
+                    date_format = "yyyy/mm/dd",
+                    helper_text = "YYYY/MM/DD Format",
+                    required = True,
+                    text = str(datetime.now().year) + "/" + str(datetime.now().month) + "/" + str(datetime.now().day)
                 ),
-                dateLabel,
                 MDTextField(
                     hint_text = "Cost",
                     input_filter = "float",
+                    required = True
                 ),
-                vendorDropItem,
-                paymentMethodDropItem,                
+                MDBoxLayout(
+                    MDLabel(
+                        text = "Vendor/Service"
+                    ),
+                    vendorDropItem,
+                    padding = "12dp"
+                ),
+                MDBoxLayout(
+                    MDLabel(
+                        text = "Category"
+                    ),
+                    categoryDropItem,
+                    padding = "12dp"
+                ),
+                MDBoxLayout(
+                    MDLabel(
+                        text = "Payment Method"
+                    ),
+                    paymentMethodDropItem,
+                    padding = "12dp"
+                ),                
                 MDTextField(
                     hint_text = "Description"
                 ),
@@ -201,6 +236,10 @@ class TraxAll(MDApp):
 
         dialog.open()
         # datePicker.open()
+
+    # def on_save(self, instance, value):
+    #     print("gooby")
+    #     self.dateLabel.text = str(value)
 
     def askForNewItem(self, itemList, filename, itemType):
         errorDialog = MDDialog(
