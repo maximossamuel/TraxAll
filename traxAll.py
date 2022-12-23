@@ -12,6 +12,8 @@ from kivymd.uix.dialog import MDDialog
 from kivymd.uix.textfield import MDTextField
 from kivymd.uix.pickers import MDDatePicker
 from kivymd.uix.menu import MDDropdownMenu
+from kivymd.uix.dropdownitem import MDDropDownItem
+from kivymd.uix.label import MDLabel
 
 import csv
 from datetime import date
@@ -92,7 +94,12 @@ class TraxAll(MDApp):
         return self.screen
 
     def askForNewTransaction(self):
+
         transaction = []
+
+        dateLabel = MDLabel(
+            text = "Select a date"
+        )
 
         errorDialog = MDDialog(
             title = "Error",
@@ -105,26 +112,73 @@ class TraxAll(MDApp):
             ]
         )
 
-        datePicker = MDDatePicker(
-            on_cancel = lambda x: print("Daniel")
+        # datePicker = MDDatePicker(
+        #     on_save = lambda x=value: assign()
+        # )
+
+        paymentMethodListItems = [
+            {
+                "text" : item[0],
+                "viewclass" : "OneLineListItem",
+                "on_release" : lambda x = item: [paymentMethodDropItem.set_item(x[0]), paymentMethodMenu.dismiss()]
+            } for item in self.paymentMethods
+        ]
+
+        vendorListItems = [
+            {
+                "text" : item[0],
+                "viewclass" : "OneLineListItem",
+                "on_release" : lambda x = item: [vendorDropItem.set_item(x[0]), vendorMenu.dismiss()]
+            } for item in self.vendors
+        ]
+
+        vendorDropItem = MDDropDownItem()
+        paymentMethodDropItem = MDDropDownItem()
+        categoryDropItem = MDDropDownItem()
+
+        vendorMenu = MDDropdownMenu(
+            items = vendorListItems,
+            position = "center",
+            caller = vendorDropItem,
+            width_mult = 4
         )
+
+        paymentMethodMenu = MDDropdownMenu(
+            items = paymentMethodListItems,
+            position = "center",
+            caller = paymentMethodDropItem,
+            width_mult = 4
+        )
+
+        categoryMenu = MDDropdownMenu(
+            items = categoryListItems,
+            position = "center",
+            caller = categoryDropItem,
+            width_mult = 4
+        )
+
+        vendorDropItem.text = "Vendor"
+        paymentMethodDropItem.text = "Payment Method"
+
+        vendorDropItem.on_release = vendorMenu.open
+        paymentMethodDropItem.on_release = paymentMethodMenu.open
 
         dialog = MDDialog(
             title = "Add Transaction",
             type = "custom",
             content_cls = MDBoxLayout(
                 MDTextField(
+                    hint_text = "Date",
+                    validator = "date",
+                    date_format = "yyyy/mm/dd"
+                ),
+                dateLabel,
+                MDTextField(
                     hint_text = "Cost",
                     input_filter = "float",
                 ),
-                MDDropdownMenu(
-                    #text = "Store/Service",
-                    items = self.vendors
-                ),
-                MDDropdownMenu(
-                    #text = "Payment Method",
-                    items = self.paymentMethods
-                ),
+                vendorDropItem,
+                paymentMethodDropItem,                
                 MDTextField(
                     hint_text = "Description"
                 ),
@@ -146,7 +200,7 @@ class TraxAll(MDApp):
         )
 
         dialog.open()
-        datePicker.open()
+        # datePicker.open()
 
     def askForNewItem(self, itemList, filename, itemType):
         errorDialog = MDDialog(
@@ -179,7 +233,7 @@ class TraxAll(MDApp):
                 ),
                 MDFillRoundFlatButton(
                     text = "ADD",
-                    on_release = lambda x : dialog.dismiss() if self.addToList(textField.text, itemList, filename) else errorDialog.open()   
+                    on_release = lambda x : dialog.dismiss() if self.addToList([textField.text], itemList, filename) else errorDialog.open()   
                 )
             ],
         )
@@ -220,24 +274,24 @@ class TraxAll(MDApp):
         csvFilename = open(filename, 'w', newline = '')
         csvWriter = csv.writer(csvFilename)
         
-        for rowData in itemList:
-            csvWriter.writerow(rowData)
+        csvWriter.writerows(itemList)
 
     def addTransaction(self, newData):
         self.dataTable.add_row(newData)
         self.dataTable.row_data.sort(key = lambda data: data[0], reverse = True)
 
-        self.saveToFile(self.data, self.transactionsFile)
+        self.saveToFile(self.dataTable.row_data, self.transactionsFile)
 
         return True
 
     def addToList(self, newData, itemList, filename):
-        itemList.append(newData)
-        itemList.sort()
-
         for rowData in itemList:
             if newData == rowData:
                 return False
+        
+        itemList.append(newData)
+        print(itemList)
+        itemList.sort()
 
         self.saveToFile(itemList, filename)
         
