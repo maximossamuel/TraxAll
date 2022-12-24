@@ -429,17 +429,101 @@ class TraxAll(MDApp):
                     on_release = lambda x : dialog.dismiss()
                 ),
                 MDFillRoundFlatButton(
-                    text = "CALCULATE",
-                    on_release = lambda x : dialog.dismiss() if self.showResults(startDateTextField.text, endDateTextField, dropDownItems) else errorDialog.open()   
+                    text = "SEARCH",
+                    on_release = lambda x : dialog.dismiss() if self.showResults(startDateTextField.text, endDateTextField.text, dropDownItems) else errorDialog.open()   
                 )
             ]
         )
 
         dialog.open()
 
-    @staticmethod
     def showResults(self, startDateString, endDateString, selections):
-        return False
+
+        startDate = date.fromisoformat(startDateString.replace("/", "-"))
+        endDate = date.fromisoformat(endDateString.replace("/", "-"))
+
+        if (startDate > endDate) or (startDate > date.today()) or (endDate > date.today()):
+            return False
+
+        paymentMethod = None
+        category = None
+        vendor = None
+
+        for i in range (0, len(selections)):
+            if (selections[i][0] == "P"):
+                paymentMethod = selections[i][1]
+            
+            elif (selections[i][0] == "C"):
+                category = selections[i][1]
+
+            elif (selections[i][0] == "V"):
+                vendor = selections[i][1]
+
+        #filteredData = self.dataTable.row_data.copy()
+        filteredData = []
+
+        for rowData in self.dataTable.row_data:
+            shouldBeAdded = True
+
+            if rowData[0] > endDate or rowData[0] < startDate:
+                shouldBeAdded = False
+                #print(rowData)
+                continue
+
+            if paymentMethod != None:
+                if paymentMethod != rowData[4]:
+                    shouldBeAdded = False
+                    #print(rowData)
+                    continue
+            
+            if category != None:
+                if category != rowData[3]:
+                    shouldBeAdded = False
+                    #print(rowData)
+                    continue
+
+            if vendor != None:
+                if vendor != rowData[2]:
+                    shouldBeAdded = False
+                    #print(rowData)
+                    continue
+
+            if shouldBeAdded:
+                filteredData.append(rowData)
+            
+        totalSpent = 0
+
+        for rowData in filteredData:
+            totalSpent = totalSpent + float(rowData[1].replace("$", ''))
+
+        dialog = MDDialog (
+            title = "[color=ff0000]Total $" + str(totalSpent) + " spent[/color]",
+            type = "custom",
+            content_cls = MDBoxLayout(
+                MDDataTable (
+                    size_hint = (1.0, 0.8),
+                    check = False,
+                    column_data = [("Date", dp(20)), ("Cost", dp(20)), ("Store/Service", dp(30)), ("Category", dp(30)), ("Payment Method", dp(30)), ("Description", dp(30))],
+                    row_data = filteredData,
+                    rows_num = 1000,
+                    sorted_on = "Date",
+                ),
+                orientation = "vertical",
+                size_hint_y = None,
+                height = "600dp",
+                width = "600dp"
+            ),
+            buttons = [
+                MDFillRoundFlatButton(
+                    text = "OK",
+                    on_release = lambda x : dialog.dismiss()
+                )
+            ]
+        )
+
+        dialog.open()
+
+        return True
 
     @staticmethod
     def readFromFile(filename):
