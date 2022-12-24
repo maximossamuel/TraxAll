@@ -26,6 +26,7 @@ class TraxAll(MDApp):
     vendors = []
     paymentMethods = []
     categories = []
+    mostRecent = None
 
     transactionsFile = "csvFiles/transactions.csv"
     vendorsFile = "csvFiles/vendors.csv"
@@ -97,6 +98,10 @@ class TraxAll(MDApp):
             #pos_hint = {"center_x" : 0.8}
         )
 
+        deleteButton = MDFloatingActionButton(
+            icon = "icons/delete.png",
+            on_release = lambda x : self.deleteConfirmation()
+        )
 
         layout = MDFloatLayout()
         
@@ -105,9 +110,11 @@ class TraxAll(MDApp):
         self.screen.add_widget(
             MDBoxLayout(
                 addButton,
+                deleteButton,
                 calculateButton,
                 padding = "20dp",
-                pos_hint = {"center_x" : -0.36}
+                spacing = "250dp",
+                pos_hint = {"center_x" : 0.1}
             )
         )
         #self.addTransaction((date.fromisoformat("2022-03-11"),"This","os ","a","test","stub"))
@@ -437,10 +444,50 @@ class TraxAll(MDApp):
 
         dialog.open()
 
+    def deleteConfirmation(self):
+        dialog = MDDialog(
+            title = "Undo",
+            text = "Would you like to undo your last transaction?",
+            buttons = [
+                MDFlatButton(
+                    text = "No",
+                    on_release = lambda x : dialog.dismiss()
+                ),
+                MDFillRoundFlatButton(
+                    text = "Yes",
+                    on_release = lambda x : [self.deleteTransaction(), dialog.dismiss()]  
+                )
+            ]
+        )
+
+        errorDialog = MDDialog(
+            title = "Error",
+            text = "There is no transaction to redo.",
+            buttons = [
+                MDFillRoundFlatButton(
+                    text = "OK",
+                    on_release = lambda x : errorDialog.dismiss()
+                )
+            ]
+        )
+
+        if self.mostRecent == None:
+            errorDialog.open()
+        else:
+            dialog.open()
+        
+    def deleteTransaction(self):
+        self.dataTable.row_data.remove(self.mostRecent)
+        self.mostRecent = None
+
+
     def showResults(self, startDateString, endDateString, selections):
 
-        startDate = date.fromisoformat(startDateString.replace("/", "-"))
-        endDate = date.fromisoformat(endDateString.replace("/", "-"))
+        try:    
+            startDate = date.fromisoformat(startDateString.replace("/", "-"))
+            endDate = date.fromisoformat(endDateString.replace("/", "-"))
+        except:
+            return False
 
         if (startDate > endDate) or (startDate > date.today()) or (endDate > date.today()):
             return False
@@ -564,7 +611,10 @@ class TraxAll(MDApp):
     def addTransaction(self, newData):
         newTransaction = []
         
-        newTransaction.append(date.fromisoformat(newData[0].replace('/', '-')))
+        try:
+            newTransaction.append(date.fromisoformat(newData[0].replace('/', '-')))
+        except:
+            return False
 
         if newTransaction[0] > date.today():
             print ("Date")
@@ -597,6 +647,8 @@ class TraxAll(MDApp):
         
         self.dataTable.add_row(newTransaction)
         self.dataTable.row_data.sort(key = lambda data: data[0], reverse = True)
+
+        self.mostRecent = newTransaction
 
         self.saveToFile(self.dataTable.row_data, self.transactionsFile)
 
