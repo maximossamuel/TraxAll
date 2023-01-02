@@ -69,7 +69,7 @@ class TraxAll(MDApp):
             ]
         }
 
-        ## Creation of data tab;e
+        ## Creation of data table
         self.dataTable = MDDataTable (
             pos_hint = {"center_x" : 0.5, "center_y" : 0.5},
             size_hint = (1.0, 0.8),
