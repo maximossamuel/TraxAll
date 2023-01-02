@@ -41,11 +41,15 @@ class TraxAll(MDApp):
     screen = MDScreen()
 
     def build(self):
-        self.tableFromFile ("csvFiles/transactions.csv")
+        self.theme_cls.theme_style = "Dark"
+        self.theme_cls.primary_palette = "Green"
+
+        self.tableFromFile (self.transactionsFile)
         self.listFromFile (self.vendors, self.vendorsFile)
         self.listFromFile (self.paymentMethods, self.paymentMethodsFile)
         self.listFromFile (self.categories, self.categoriesFile)
 
+        ## Initializing the array containing dial options. Is used when speed dial is created        
         dialOptions = {
             "Transaction" : [ 
                 "icons/money.png",
@@ -58,10 +62,14 @@ class TraxAll(MDApp):
             "Vendor" : [
                 "icons/vendor.png",
                 "on_release", lambda x : self.askForNewItem(self.vendors, self.vendorsFile, "Vendor/Service")
+            ],
+            "Category" : [
+                "icons/category.png",
+                "on_release", lambda x: self.askForNewItem(self.categories, self.categoriesFile, "Category")
             ]
         }
 
-
+        ## Creation of data tab;e
         self.dataTable = MDDataTable (
             pos_hint = {"center_x" : 0.5, "center_y" : 0.5},
             size_hint = (1.0, 0.8),
@@ -72,40 +80,25 @@ class TraxAll(MDApp):
             sorted_on = "Date",
         )
 
-        # self.dateLabel = MDLabel()
-
-        # addTransactionButtonBox = MDBoxLayout(
-        #     pos_hint = {"center_x" : 0.5},
-        #     adaptive_size = True,
-        #     padding = "10dp",
-        #     spacing = "10dp"
-        # )
-
-        # addTransactionButton = MDFillRoundFlatButton(
-        #     text = "Add Transaction",
-        #     on_release = lambda x: self.askForNewTransaction()
-        # )
-
+        ## Button for adding a transaction
         addButton = MDFloatingActionButtonSpeedDial(
             data = dialOptions,
             root_button_anim = True,
             pos_hint = {"center_x" : 0.2}
         )
 
+        ## Button for open the 'Calculate Expenses' menu
         calculateButton = MDFloatingActionButton(
             icon = "icons/reciept.png",
             on_release = lambda x : self.askForCalculationInfo(),
-            #pos_hint = {"center_x" : 0.8}
         )
 
+        ## Button for undoing the previous transaction 
         deleteButton = MDFloatingActionButton(
             icon = "icons/delete.png",
             on_release = lambda x : self.deleteConfirmation()
         )
 
-        layout = MDFloatLayout()
-        
-        #addTransactionButtonBox.add_widget(addButton)
         self.screen.add_widget(self.dataTable)
         self.screen.add_widget(
             MDBoxLayout(
@@ -117,14 +110,16 @@ class TraxAll(MDApp):
                 pos_hint = {"center_x" : 0.1}
             )
         )
-        #self.addTransaction((date.fromisoformat("2022-03-11"),"This","os ","a","test","stub"))
+
         return self.screen
 
+    ## This method generates a menu that asks the user for the details of the
+    ## transaction they wish to add
     def askForNewTransaction(self):
         dropDownItems = []
 
-        # self.dateLabel.text = "Date"
-
+        ## Error dialog (Note for next revision, there are many of these in the code, 
+        ## next time, just make the dialog get generated from a function
         errorDialog = MDDialog(
             title = "Error",
             text = "Something's not right. Please review the transaction details and try again.",
@@ -136,9 +131,12 @@ class TraxAll(MDApp):
             ]
         )
 
+        ## Code was originally going to use the MDDatePicker library to pick dates. Did not work.
+        ## Might be implemented in a revision
         # datePicker = MDDatePicker()
         # datePicker.on_save = self.on_save and datePicker.dismiss
 
+        ## Date Text Field
         dateTextField = MDTextField(
             hint_text = "Date",
             validator = "date",
@@ -148,16 +146,22 @@ class TraxAll(MDApp):
             text = str(datetime.now().year) + "/" + str(datetime.now().month) + "/" + str(datetime.now().day)
         )
 
+        ## Cost Text Field
         costTextField = MDTextField(
             hint_text = "Cost",
             input_filter = "float",
             required = True
         )
 
+        ## Description Text Field
         descriptionTextField = MDTextField(
-            hint_text = "Description"
+            hint_text = "Description (Optional)"
         )
 
+        ## Data to be put into the drop down lists. Each time an option is selected in the dropdown menu, it is appended to
+        ## the dropDownItems array. Where the last instances of "P", "V" and "C" are checked and implemented accordingly.
+
+        ## Payment Method Dropdown Items
         paymentMethodListItems = [
             {
                 "text" : item[0],
@@ -166,6 +170,7 @@ class TraxAll(MDApp):
             } for item in self.paymentMethods
         ]
 
+        ## Vendor Dropdown Items
         vendorListItems = [
             {
                 "text" : item[0],
@@ -174,6 +179,7 @@ class TraxAll(MDApp):
             } for item in self.vendors
         ]
 
+        ## Category Dropdown Items
         categoryListItems = [
             {
                 "text" : item [0],
@@ -182,10 +188,13 @@ class TraxAll(MDApp):
             } for item in self.categories
         ]
 
+        ## Drop Items and elements are modified separately due to errors being returned when traditionally handling a KivyMD element
+
         vendorDropItem = MDDropDownItem()
         paymentMethodDropItem = MDDropDownItem()
         categoryDropItem = MDDropDownItem()
-
+  
+        ## Creation of Dropdown Menus
         vendorMenu = MDDropdownMenu(
             items = vendorListItems,
             position = "center",
@@ -211,16 +220,20 @@ class TraxAll(MDApp):
         paymentMethodDropItem.text = "Select"
         categoryDropItem.text = "Select"
 
+        ## Setting the drop items to open the dropdown menus upon getting clicked
         vendorDropItem.on_release = vendorMenu.open
         paymentMethodDropItem.on_release = paymentMethodMenu.open
         categoryDropItem.on_release = categoryMenu.open
 
+        ## Method's main dialog
         dialog = MDDialog(
             title = "Add Transaction",
             type = "custom",
             content_cls = MDBoxLayout(
                 dateTextField,
                 costTextField,
+
+                ## BoxLayouts for each Dropdown menu, each including the DropItem and its label
                 MDBoxLayout(
                     MDLabel(
                         text = "Vendor/Service"
@@ -261,13 +274,18 @@ class TraxAll(MDApp):
         )
 
         dialog.open()
+
+        ## More MDDatePicker Code, keep for possible revisions
         # datePicker.open()
 
     # def on_save(self, instance, value):
     #     print("gooby")
     #     self.dateLabel.text = str(value)
 
+    ## Asks the user for the name of the new item they wish to add to the appropriate list, whether that be a vendor or payment method.
     def askForNewItem(self, itemList, filename, itemType):
+
+        ## Error Dialog
         errorDialog = MDDialog(
             title = "Error",
             text = "This " + itemType.lower() + " is already in our records. Please try again.",
@@ -279,11 +297,15 @@ class TraxAll(MDApp):
             ]
         )
 
+        ## Main User-input text field. This text field's hint is named based on the itemType value 
+        ## passed into the method. Will be displayed followed by "Add New" in the dialog box
         textField = MDTextField(
             hint_text = itemType
         )
 
         dialog = MDDialog(
+            
+            ## Title is changed based on the string stored in itemType
             title = "Add New " + itemType,
             type = "custom",
             content_cls = MDBoxLayout(
@@ -305,8 +327,10 @@ class TraxAll(MDApp):
 
         dialog.open()
 
+    ## Creates a dialog box that asks for what kinds of transactions the user wants to search for
     def askForCalculationInfo(self):
     
+        ## Error Dialog Box
         errorDialog = MDDialog(
             title = "Error",
             text = "Something's not right. Please review your inputs and try again.",
@@ -318,24 +342,31 @@ class TraxAll(MDApp):
             ]
         )
 
+        ## Text field for the start date (note for next revision, these can easily be done in a function)
         startDateTextField = MDTextField(
             hint_text = "Start Date",
             validator = "date",
             date_format = "yyyy/mm/dd",
             helper_text = "YYYY/MM/DD Format",
             required = True,
+
+            ## Intializing the contents of the text field as the current date
             text = str(datetime.now().year) + "/" + str(datetime.now().month) + "/" + str(datetime.now().day)
         )
 
+        ## Text field for the start date
         endDateTextField = MDTextField(
             hint_text = "End Date",
             validator = "date",
             date_format = "yyyy/mm/dd",
             helper_text = "YYYY/MM/DD Format",
             required = True,
+
+            ## Initializing the content of the text field as the current date
             text = str(datetime.now().year) + "/" + str(datetime.now().month) + "/" + str(datetime.now().day)
         )
 
+        ## Same logic with askForNewTransactions used with this function
         dropDownItems = []
 
         paymentMethodListItems = [
@@ -395,15 +426,19 @@ class TraxAll(MDApp):
         paymentMethodDropItem.on_release = paymentMethodMenu.open
         categoryDropItem.on_release = categoryMenu.open
 
+        ## Method's main dialog
         dialog = MDDialog(
             title = "Calculate Expenses",
             type = "custom",
             content_cls = MDBoxLayout(
+
+                ## BoxLayout for text fields
                 MDBoxLayout(
                     startDateTextField,
                     endDateTextField,
                     spacing = "30dp"
                 ),
+                ## BoxLayout is created for each dropdown item
                 MDBoxLayout(
                     MDLabel(
                         text = "Vendor/Service"
@@ -444,7 +479,10 @@ class TraxAll(MDApp):
 
         dialog.open()
 
+    ## Asks the user if they wish to undo the last transaction they added, temporary function until a more
+    ## viable solution is developed for deleting a transaction in future revision
     def deleteConfirmation(self):
+        ## Method's main dialog
         dialog = MDDialog(
             title = "Undo",
             text = "Would you like to undo your last transaction?",
@@ -460,6 +498,7 @@ class TraxAll(MDApp):
             ]
         )
 
+        ## Error dialog
         errorDialog = MDDialog(
             title = "Error",
             text = "There is no transaction to redo.",
@@ -471,27 +510,35 @@ class TraxAll(MDApp):
             ]
         )
 
+        ## When a new transaction is created, it is set as the most recent transaction,
+        ## this resets every time the app is turned on. If it is found that no transaction has been made
+        ## during runtime, the error dialog opens
         if self.mostRecent == None:
             errorDialog.open()
         else:
             dialog.open()
         
+    ## Deletes the most recent transaction
     def deleteTransaction(self):
         self.dataTable.row_data.remove(self.mostRecent)
         self.mostRecent = None
 
-
+    ## Shows a new dialog box that shows the results of a user's search
     def showResults(self, startDateString, endDateString, selections):
 
+        ## Tries to get convert the two dates to datetime format. Function will shut down
+        ## if that fails
         try:    
             startDate = date.fromisoformat(startDateString.replace("/", "-"))
             endDate = date.fromisoformat(endDateString.replace("/", "-"))
         except:
             return False
 
+        ## Check to see if the date range is valid
         if (startDate > endDate) or (startDate > date.today()) or (endDate > date.today()):
             return False
 
+        ## Initialization and setting of dropdown selections to be used in search
         paymentMethod = None
         category = None
         vendor = None
@@ -506,43 +553,45 @@ class TraxAll(MDApp):
             elif (selections[i][0] == "V"):
                 vendor = selections[i][1]
 
-        #filteredData = self.dataTable.row_data.copy()
         filteredData = []
 
+        ## Search begins, for loop goes through the existing list and checks whether or not each
+        ## list element is one of the elements the user is searching for. If so, the element is added
+        ## to a new list with the searched elements at the end of each iteration
         for rowData in self.dataTable.row_data:
             shouldBeAdded = True
 
+            ## Check if date is in range
             if rowData[0] > endDate or rowData[0] < startDate:
                 shouldBeAdded = False
-                #print(rowData)
                 continue
 
+            ## Check for each dropdown item
             if paymentMethod != None:
                 if paymentMethod != rowData[4]:
                     shouldBeAdded = False
-                    #print(rowData)
                     continue
             
             if category != None:
                 if category != rowData[3]:
                     shouldBeAdded = False
-                    #print(rowData)
                     continue
 
             if vendor != None:
                 if vendor != rowData[2]:
                     shouldBeAdded = False
-                    #print(rowData)
                     continue
 
             if shouldBeAdded:
                 filteredData.append(rowData)
-            
+
+        ## Initialization and adding up of total money spent from elements within search
         totalSpent = 0
 
         for rowData in filteredData:
             totalSpent = totalSpent + float(rowData[1].replace("$", ''))
 
+        ## Main dialog
         dialog = MDDialog (
             title = "[color=ff0000]Total $" + str(totalSpent) + " spent[/color]",
             type = "custom",
@@ -572,17 +621,18 @@ class TraxAll(MDApp):
 
         return True
 
+    ## Opens a CSV file
     @staticmethod
     def readFromFile(filename):
         csvFilename = open(filename, encoding="utf-8-sig")
         csvFileReader = csv.reader(csvFilename)
         return csvFileReader
 
+    ## Creates a 2D array of data from a file
     def tableFromFile(self, filename):
         try:
             fileReader = self.readFromFile(filename)
         except IOError as err:
-            print(filename)
             return
 
         for rowData in fileReader:
@@ -590,6 +640,7 @@ class TraxAll(MDApp):
 
         self.data.sort(key = lambda data: data[0], reverse = True)
 
+    ## Creates an array of data to a given list from a given file
     def listFromFile (self, itemList, filename):
         try:
             fileReader = self.readFromFile(filename)
@@ -602,30 +653,37 @@ class TraxAll(MDApp):
 
         itemList.sort()
 
+    ## Saves from a given list to a given file
     def saveToFile(self, itemList, filename):
         csvFilename = open(filename, 'w', newline = '')
         csvWriter = csv.writer(csvFilename)
         
         csvWriter.writerows(itemList)
 
+    ## Checks validity of and adds a transaction to the data table
     def addTransaction(self, newData):
         newTransaction = []
         
+        ## Check to see if date/format is valid
         try:
             newTransaction.append(date.fromisoformat(newData[0].replace('/', '-')))
         except:
             return False
 
+        ## Date cannot be from later than the current day
         if newTransaction[0] > date.today():
             print ("Date")
             return False
-        
+
+        ## Adding a dollar sign to the cost string
         newTransaction.append("$" + newData[1])
 
+        ## Check to see if cost text field is empty
         if newTransaction[1] == "$":
             print("Money")
             return False
 
+        ## Intialization/addition of drop item selections
         for i in range (0, 3):
             newTransaction.append(None)
 
@@ -639,30 +697,38 @@ class TraxAll(MDApp):
             elif (newData[2][i][0] == "V"):
                 newTransaction[2] = newData[2][i][1]
 
+
         for i in range(2, 5):
             if newTransaction[i] == None:
                 return False
 
+        ## Addition of description
         newTransaction.append(newData[3])
         
+        ## If the method makes it to this point, the new transaction is added to the data table and the data is sorted
         self.dataTable.add_row(newTransaction)
         self.dataTable.row_data.sort(key = lambda data: data[0], reverse = True)
 
+        ## mostRecent is set to the new transaction so that it can be undone if the user wishes
         self.mostRecent = newTransaction
 
+        ## Current data on data table is saved to the transactions file
         self.saveToFile(self.dataTable.row_data, self.transactionsFile)
 
         return True
 
+    ## Adds a given element to a given list
     def addToList(self, newData, itemList, filename):
+        ## Check to see if element is already in the list
         for rowData in itemList:
             if newData == rowData:
                 return False
         
+        ## New element is added to the list and the list is sorted
         itemList.append(newData)
-        print(itemList)
         itemList.sort()
 
+        ## New list is saved to the given file
         self.saveToFile(itemList, filename)
         
         return True
