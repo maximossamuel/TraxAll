@@ -144,7 +144,7 @@ class TraxAll(MDApp):
             date_format = "yyyy/mm/dd",
             helper_text = "YYYY/MM/DD Format",
             required = True,
-            text = str(datetime.now().year) + "/" + str(datetime.now().month) + "/" + str(datetime.now().day)
+            text = str(datetime.now().year) + "/" + f"{(datetime.now().month):02d}" + "/" + f"{(datetime.now().day):02d}"
         )
 
         ## Cost Text Field
@@ -352,7 +352,7 @@ class TraxAll(MDApp):
             required = True,
 
             ## Intializing the contents of the text field as the current date
-            text = str(datetime.now().year) + "/" + str(datetime.now().month) + "/" + str(datetime.now().day)
+            text = str(datetime.now().year) + "/" + f"{(datetime.now().month):02d}" + "/" + f"{(datetime.now().day):02d}"
         )
 
         ## Text field for the start date
@@ -364,7 +364,7 @@ class TraxAll(MDApp):
             required = True,
 
             ## Initializing the content of the text field as the current date
-            text = str(datetime.now().year) + "/" + str(datetime.now().month) + "/" + str(datetime.now().day)
+            text = str(datetime.now().year) + "/" + f"{(datetime.now().month):02d}" + "/" + f"{(datetime.now().day):02d}"
         )
 
         ## Same logic with askForNewTransactions used with this function
